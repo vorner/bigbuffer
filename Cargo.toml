@@ -1,0 +1,8 @@
+[package]
+name = "bigbuffer"
+version = "0.1.0"
+authors = ["Michal 'vorner' Vaner <vorner@vorner.cz>"]
+
+[dependencies]
+structopt = "~0.1"
+structopt-derive = "~0.1"
