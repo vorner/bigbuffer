@@ -31,11 +31,12 @@ fn main() {
         .spawn(move || {
             loop {
                 let mut buffer = Vec::new();
+                let len = 1024*1024;
                 io::stdin()
-                    .take(1024*1024)
+                    .take(len)
                     .read_to_end(&mut buffer)
                     .unwrap();
-                if buffer.len() == 0 {
+                if (buffer.len() as u64) < len {
                     break;
                 }
                 READ_CNT.fetch_add(1, Ordering::Relaxed);
