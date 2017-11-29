@@ -3,7 +3,7 @@ extern crate structopt;
 #[macro_use]
 extern crate structopt_derive;
 
-use std::io;
+use std::io::{self, BufWriter};
 use std::io::prelude::*;
 use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 use std::sync::mpsc;
@@ -91,9 +91,11 @@ fn main() {
                     let written = written_raw * len;
                     let diff_written = (written - last_written) / options.update;
                     let fill = read_raw - written_raw;
-                    eprintln!("{}Read {} ({}/s), written {} ({}/s), fill {}%",
+                    let mut writer = BufWriter::with_capacity(512, io::stderr());
+                    writeln!(&mut writer, "{}Read {} ({}/s), written {} ({}/s), fill {}%",
                               name, fs(read), fs(diff_read), fs(written), fs(diff_written),
-                              (100 * fill) / (options.size as u64));
+                              (100 * fill) / (options.size as u64))
+                        .unwrap();
                     last_read = read;
                     last_written = written;
                 }
