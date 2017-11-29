@@ -83,11 +83,13 @@ fn main() {
                 let mut last_written = 0;
                 loop {
                     thread::sleep(Duration::from_secs(options.update as u64));
-                    let read = (READ_CNT.load(Ordering::Relaxed) as u64) * len;
+                    let read_raw = READ_CNT.load(Ordering::Relaxed) as u64;
+                    let read = read_raw * len;
                     let diff_read = (read - last_read) / options.update;
-                    let written = (WRITE_CNT.load(Ordering::Relaxed) as u64) * len;
+                    let written_raw = WRITE_CNT.load(Ordering::Relaxed) as u64;
+                    let written = written_raw * len;
                     let diff_written = (written - last_written) / options.update;
-                    let fill = read - written;
+                    let fill = read_raw - written_raw;
                     eprintln!("{}Read {} ({}/s), written {} ({}/s), fill {}%",
                               name, fs(read), fs(diff_read), fs(written), fs(diff_written),
                               (100 * fill) / (options.size as u64));
