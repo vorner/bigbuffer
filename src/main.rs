@@ -50,12 +50,13 @@ fn main() {
                     .take(len)
                     .read_to_end(&mut buffer)
                     .unwrap();
-                if (buffer.len() as u64) < len {
-                    break;
-                }
+                let buflen = buffer.len();
                 READ_CNT.fetch_add(1, Ordering::Relaxed);
                 sender.send(buffer)
                     .unwrap();
+                if (buflen as u64) < len {
+                    break;
+                }
             }
         })
         .unwrap();
