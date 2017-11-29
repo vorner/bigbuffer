@@ -1,3 +1,4 @@
+extern crate humansize;
 extern crate structopt;
 #[macro_use]
 extern crate structopt_derive;
@@ -9,6 +10,7 @@ use std::sync::mpsc;
 use std::thread::{self, Builder as Thread};
 use std::time::Duration;
 
+use humansize::{FileSize, file_size_opts as size};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -27,17 +29,23 @@ struct Options {
 static READ_CNT: AtomicUsize = ATOMIC_USIZE_INIT;
 static WRITE_CNT: AtomicUsize = ATOMIC_USIZE_INIT;
 
+fn fs(val: u64) -> String {
+    match val.file_size(size::CONVENTIONAL) {
+        Ok(s) => s,
+        Err(s) => s,
+    }
+}
+
 fn main() {
     let options = Options::from_args();
-    eprintln!("{:#?}", options);
 
     let (sender, receiver) = mpsc::sync_channel::<Vec<u8>>(options.size);
+    let len = 1024*1024;
     let reader = Thread::new()
         .name("Reader".to_owned())
         .spawn(move || {
             loop {
                 let mut buffer = Vec::new();
-                let len = 1024*1024;
                 io::stdin()
                     .take(len)
                     .read_to_end(&mut buffer)
@@ -75,14 +83,14 @@ fn main() {
                 let mut last_written = 0;
                 loop {
                     thread::sleep(Duration::from_secs(options.update as u64));
-                    let read = READ_CNT.load(Ordering::Relaxed);
-                    let diff_read = read - last_read;
-                    let written = WRITE_CNT.load(Ordering::Relaxed);
-                    let diff_written = written - last_written;
+                    let read = (READ_CNT.load(Ordering::Relaxed) as u64) * len;
+                    let diff_read = (read - last_read) / options.update;
+                    let written = (WRITE_CNT.load(Ordering::Relaxed) as u64) * len;
+                    let diff_written = (written - last_written) / options.update;
                     let fill = read - written;
-                    eprintln!("{}Read {} MB ({}/s), written {} MB ({}/s), fill {}%",
-                              name, read, diff_read, written, diff_written,
-                              (100 * fill) / options.size);
+                    eprintln!("{}Read {} ({}/s), written {} ({}/s), fill {}%",
+                              name, fs(read), fs(diff_read), fs(written), fs(diff_written),
+                              (100 * fill) / (options.size as u64));
                     last_read = read;
                     last_written = written;
                 }
