@@ -17,6 +17,9 @@ struct Options {
     verbose: bool,
     #[structopt(short="n", long="name", help="Names the buffer in the progress output")]
     name: Option<String>,
+    #[structopt(short="u", long="update", help="Progress update interval, in seconds",
+                default_value="5")]
+    update: u64,
     #[structopt(help="Size in MiB")]
     size: usize,
 }
@@ -70,7 +73,7 @@ fn main() {
                 let mut last_read = 0;
                 let mut last_written = 0;
                 loop {
-                    thread::sleep(Duration::from_secs(1));
+                    thread::sleep(Duration::from_secs(options.update));
                     let read = READ_CNT.load(Ordering::Relaxed);
                     let diff_read = read - last_read;
                     let written = WRITE_CNT.load(Ordering::Relaxed);
