@@ -11,14 +11,14 @@ use std::time::Duration;
 
 use structopt::StructOpt;
 
-#[derive(StructOpt)]
+#[derive(Debug, StructOpt)]
 struct Options {
     #[structopt(short="v", long="verbose", help="Provides some progress output")]
     verbose: bool,
     #[structopt(short="n", long="name", help="Names the buffer in the progress output")]
     name: Option<String>,
     #[structopt(short="u", long="update", help="Progress update interval, in seconds",
-                default_value="5")]
+                default_value="5", parse(try_from_str))]
     update: u64,
     #[structopt(help="Size in MiB")]
     size: usize,
@@ -29,6 +29,7 @@ static WRITE_CNT: AtomicUsize = ATOMIC_USIZE_INIT;
 
 fn main() {
     let options = Options::from_args();
+    eprintln!("{:#?}", options);
 
     let (sender, receiver) = mpsc::sync_channel::<Vec<u8>>(options.size);
     let reader = Thread::new()
@@ -73,7 +74,7 @@ fn main() {
                 let mut last_read = 0;
                 let mut last_written = 0;
                 loop {
-                    thread::sleep(Duration::from_secs(options.update));
+                    thread::sleep(Duration::from_secs(options.update as u64));
                     let read = READ_CNT.load(Ordering::Relaxed);
                     let diff_read = read - last_read;
                     let written = WRITE_CNT.load(Ordering::Relaxed);
