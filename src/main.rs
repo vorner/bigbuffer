@@ -15,6 +15,8 @@ use structopt::StructOpt;
 struct Options {
     #[structopt(short="v", long="verbose", help="Provide some progress output")]
     verbose: bool,
+    #[structopt(short="n", long="name", help="Name the buffer in output")]
+    name: Option<String>,
     #[structopt(help="Size in MiB")]
     size: usize,
 }
@@ -62,6 +64,9 @@ fn main() {
         Thread::new()
             .name("Progress".to_owned())
             .spawn(move || {
+                let name = options.name
+                    .map(|n| format!("{}: ", n))
+                    .unwrap_or_else(String::new);
                 let mut last_read = 0;
                 let mut last_written = 0;
                 loop {
@@ -71,8 +76,9 @@ fn main() {
                     let written = WRITE_CNT.load(Ordering::Relaxed);
                     let diff_written = written - last_written;
                     let fill = read - written;
-                    eprintln!("Read {} MB ({}/s), written {} MB ({}/s), fill {}%",
-                              read, diff_read, written, diff_written, (100 * fill) / options.size);
+                    eprintln!("{}Read {} MB ({}/s), written {} MB ({}/s), fill {}%",
+                              name, read, diff_read, written, diff_written,
+                              (100 * fill) / options.size);
                     last_read = read;
                     last_written = written;
                 }

@@ -1,5 +1,4 @@
 • Readme, license, other stuff
-• Identification prefix
 • Ability to configure size of one buffer
 • Better error handling
 • Publish a static binary somewhere
