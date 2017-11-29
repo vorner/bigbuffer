@@ -13,9 +13,9 @@ use structopt::StructOpt;
 
 #[derive(StructOpt)]
 struct Options {
-    #[structopt(short="v", long="verbose", help="Provide some progress output")]
+    #[structopt(short="v", long="verbose", help="Provides some progress output")]
     verbose: bool,
-    #[structopt(short="n", long="name", help="Name the buffer in output")]
+    #[structopt(short="n", long="name", help="Names the buffer in the progress output")]
     name: Option<String>,
     #[structopt(help="Size in MiB")]
     size: usize,
