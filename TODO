@@ -4,3 +4,5 @@
 • Publish a static binary somewhere
 • Input and output from files or commands
 • Multi-output mode
+• Format the progress output with tabs
+• Include the fill as size as well as percents
