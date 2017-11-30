@@ -78,7 +78,7 @@ fn main() {
             .name("Progress".to_owned())
             .spawn(move || {
                 let name = options.name
-                    .map(|n| format!("{}: ", n))
+                    .map(|n| format!("{}:\t", n))
                     .unwrap_or_else(String::new);
                 let mut last_read = 0;
                 let mut last_written = 0;
@@ -90,11 +90,12 @@ fn main() {
                     let written_raw = WRITE_CNT.load(Ordering::Relaxed) as u64;
                     let written = written_raw * len;
                     let diff_written = (written - last_written) / options.update;
-                    let fill = read_raw - written_raw;
+                    let fill = read - written;
+                    let capacity = (options.size as u64) * len;
                     let mut writer = BufWriter::with_capacity(512, io::stderr());
-                    writeln!(&mut writer, "{}Read {} ({}/s), written {} ({}/s), fill {}%",
+                    writeln!(&mut writer, "{}Read {} ({}/s),\twritten {} ({}/s),\tfill {}%, {}",
                               name, fs(read), fs(diff_read), fs(written), fs(diff_written),
-                              (100 * fill) / (options.size as u64))
+                              (100 * fill) / capacity, fs(fill))
                         .unwrap();
                     last_read = read;
                     last_written = written;
