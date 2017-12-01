@@ -22,7 +22,10 @@ struct Options {
     #[structopt(short="u", long="update", help="Progress update interval, in seconds",
                 default_value="5", parse(try_from_str))]
     update: u64,
-    #[structopt(help="Size in MiB")]
+    #[structopt(short="b", long="block", help="Size of one block. Default 1MiB",
+                default_value="1024*1024", parse(try_from_str))]
+    block: u64,
+    #[structopt(help="Size in blocks")]
     size: usize,
 }
 
@@ -31,8 +34,7 @@ static WRITE_CNT: AtomicUsize = ATOMIC_USIZE_INIT;
 
 fn fs(val: u64) -> String {
     match val.file_size(size::CONVENTIONAL) {
-        Ok(s) => s,
-        Err(s) => s,
+        Ok(s) | Err(s) => s,
     }
 }
 
