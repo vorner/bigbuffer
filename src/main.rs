@@ -1,3 +1,4 @@
+extern crate failure;
 extern crate humansize;
 extern crate structopt;
 #[macro_use]
@@ -7,9 +8,11 @@ use std::io::{self, BufWriter};
 use std::io::prelude::*;
 use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 use std::sync::mpsc;
+use std::process;
 use std::thread::{self, Builder as Thread};
 use std::time::Duration;
 
+use failure::Error;
 use humansize::{FileSize, file_size_opts as size};
 use structopt::StructOpt;
 
@@ -38,47 +41,43 @@ fn fs(val: u64) -> String {
     }
 }
 
-fn main() {
+fn run() -> Result<(), Error> {
     let options = Options::from_args();
 
     let (sender, receiver) = mpsc::sync_channel::<Vec<u8>>(options.size);
     let len = 1024*1024;
     let reader = Thread::new()
         .name("Reader".to_owned())
-        .spawn(move || {
+        .spawn(move || -> Result<(), Error> {
             loop {
                 let mut buffer = Vec::new();
                 io::stdin()
                     .take(len)
-                    .read_to_end(&mut buffer)
-                    .unwrap();
+                    .read_to_end(&mut buffer)?;
                 let buflen = buffer.len();
                 READ_CNT.fetch_add(1, Ordering::Relaxed);
-                sender.send(buffer)
-                    .unwrap();
+                sender.send(buffer)?;
                 if (buflen as u64) < len {
-                    break;
+                    return Ok(())
                 }
             }
-        })
-        .unwrap();
+        })?;
 
     let writer = Thread::new()
         .name("Writer".to_owned())
-        .spawn(move || {
+        .spawn(move || -> Result<(), Error> {
             for buffer in receiver {
                 io::stdout()
-                    .write_all(&buffer)
-                    .unwrap();
+                    .write_all(&buffer)?;
                 WRITE_CNT.fetch_add(1, Ordering::Relaxed);
             }
-        })
-        .unwrap();
+            Ok(())
+        })?;
 
     if options.verbose {
         Thread::new()
             .name("Progress".to_owned())
-            .spawn(move || {
+            .spawn(move || -> Result<(), Error> {
                 let name = options.name
                     .map(|n| format!("{}:\t", n))
                     .unwrap_or_else(String::new);
@@ -97,17 +96,23 @@ fn main() {
                     let mut writer = BufWriter::with_capacity(512, io::stderr());
                     writeln!(&mut writer, "{}Read {} ({}/s),\twritten {} ({}/s),\tfill {}%, {}",
                               name, fs(read), fs(diff_read), fs(written), fs(diff_written),
-                              (100 * fill) / capacity, fs(fill))
-                        .unwrap();
+                              (100 * fill) / capacity, fs(fill))?;
                     last_read = read;
                     last_written = written;
                 }
-            })
-            .unwrap();
+            })?;
     }
 
     reader.join()
-        .unwrap();
+        .unwrap()?;
     writer.join()
-        .unwrap();
+        .unwrap()?;
+    Ok(())
+}
+
+fn main() {
+    if let Err(e) = run() {
+        eprintln!("{}", e);
+        process::exit(1);
+    }
 }
