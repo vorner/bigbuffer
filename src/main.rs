@@ -26,7 +26,7 @@ struct Options {
                 default_value="5", parse(try_from_str))]
     update: u64,
     #[structopt(short="b", long="block", help="Size of one block. Default 1MiB",
-                default_value="1024*1024", parse(try_from_str))]
+                default_value="1048576", parse(try_from_str))]
     block: u64,
     #[structopt(help="Size in blocks")]
     size: usize,
