@@ -44,7 +44,13 @@ fn fs(val: u64) -> String {
 fn run() -> Result<(), Error> {
     let options = Options::from_args();
 
-    let (sender, receiver) = mpsc::sync_channel::<Vec<u8>>(options.size);
+    // One buffer is held out of the channel, so remove it from there.
+    let channel_len = if options.size > 0 {
+        options.size - 1
+    } else {
+        0
+    };
+    let (sender, receiver) = mpsc::sync_channel::<Vec<u8>>(channel_len);
     let len = 1024*1024;
     let reader = Thread::new()
         .name("Reader".to_owned())
